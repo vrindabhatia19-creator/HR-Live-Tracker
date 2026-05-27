@@ -14,28 +14,11 @@ body{background:#05080f;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFo
 .header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:28px}
 .subtitle{font-size:10px;color:#334155;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
 h1{font-size:26px;font-weight:700;letter-spacing:-.02em;color:#f8fafc}
-.hdr-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
+.sync-label{font-size:11px;font-weight:600}
 .btn-add{background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:6px}
 .btn-add:hover{opacity:.85}
-.btn-sync{background:#0f172a;color:#60a5fa;border:1px solid #1e3a5f;padding:9px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px}
-.btn-sync:hover{background:#1e293b}
-.btn-setup{background:#0f172a;color:#fbbf24;border:1px solid #2a1f03;padding:9px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer}
-.btn-setup:hover{background:#1e293b}
-/* Setup banner */
-.setup-banner{background:#0a0f1a;border:1px solid #2a1f03;border-radius:12px;padding:20px;margin-bottom:20px}
-.setup-banner h3{color:#fbbf24;font-size:14px;margin-bottom:10px}
-.setup-banner p{color:#64748b;font-size:12px;line-height:1.6;margin-bottom:12px}
-.setup-banner ol{color:#64748b;font-size:12px;line-height:2;padding-left:18px;margin-bottom:14px}
-.setup-banner ol a{color:#60a5fa}
-.setup-row{display:flex;gap:8px;flex-wrap:wrap}
-.setup-in{background:#05080f;border:1px solid #1e293b;color:#f1f5f9;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;flex:1 1 200px}
-.btn-connect{background:#fbbf24;color:#000;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer}
-.btn-skip{background:#0f172a;color:#334155;border:none;border-radius:8px;padding:9px 14px;font-size:12px;cursor:pointer}
-.sync-status{font-size:11px;padding:4px 10px;border-radius:6px;font-weight:600}
-.sync-ok{color:#4ade80;background:rgba(74,222,128,.08)}
-.sync-err{color:#f87171;background:rgba(248,113,113,.08)}
-.sync-ing{color:#60a5fa;background:rgba(96,165,250,.08)}
-/* Stats */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:18px}
 .stat-card{background:#0a0f1a;border:1px solid #0f172a;border-radius:12px;padding:14px 16px}
 .stat-num{font-size:24px;font-weight:800;display:block;line-height:1;margin-bottom:4px}
@@ -107,6 +90,8 @@ td{padding:10px 14px;font-size:13px;vertical-align:middle}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f2a1a;color:#4ade80;border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;z-index:9999;display:none;white-space:nowrap}
 .toast.show{display:block}
 .toast.err{background:#1f0808;color:#f87171;border-color:rgba(248,113,113,.25)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:32px;height:32px;border:3px solid #1e293b;border-top-color:#6366f1;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
 </style>
 </head>
 <body>
@@ -116,100 +101,86 @@ td{padding:10px 14px;font-size:13px;vertical-align:middle}
       <div class="subtitle">Important Tasks</div>
       <h1>HR Projects &amp; Analytics</h1>
     </div>
-    <div class="hdr-btns">
-      <span id="syncStatus" class="sync-status" style="display:none"></span>
-      <button class="btn-sync" onclick="syncNow()" id="syncBtn" style="display:none">⟳ Sync</button>
-      <button class="btn-setup" onclick="toggleSetup()" id="setupBtn">⚙ Setup Sync</button>
+    <div class="hdr-right">
+      <span id="syncIndicator" style="display:flex;align-items:center;font-size:11px;font-weight:600;color:#334155">
+        <span class="sync-dot" id="syncDot" style="background:#334155"></span>
+        <span id="syncTxt">Connecting…</span>
+      </span>
       <button class="btn-add" onclick="toggleAdd()"><span style="font-size:17px;line-height:1">+</span> Add Task</button>
     </div>
   </div>
 
-  <!-- Setup Banner -->
-  <div class="setup-banner" id="setupBanner" style="display:none">
-    <h3>⚙ Connect Cloud Sync (free) — saves tasks for all users</h3>
-    <p>This uses <strong>JSONBin.io</strong> — a free cloud database. Takes 2 minutes to set up once.</p>
-    <ol>
-      <li>Go to <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> → click <strong>Sign Up Free</strong></li>
-      <li>After login, click <strong>API Keys</strong> in the left menu → copy your <strong>Secret Key</strong></li>
-      <li>Paste it below and click <strong>Connect</strong></li>
-    </ol>
-    <div class="setup-row">
-      <input class="setup-in" id="apiKeyIn" placeholder="Paste your JSONBin Secret Key here ($2b$10$...)"/>
-      <input class="setup-in" id="binIdIn" placeholder="Bin ID (leave blank to auto-create)" style="max-width:260px"/>
-      <button class="btn-connect" onclick="connectCloud()">Connect</button>
-      <button class="btn-skip" onclick="toggleSetup()">Cancel</button>
+  <div id="loadingScreen" style="text-align:center;padding:60px 0">
+    <div class="spinner"></div>
+    <p style="margin-top:16px;color:#334155;font-size:12px;letter-spacing:.1em;text-transform:uppercase">Loading shared tracker…</p>
+  </div>
+
+  <div id="mainContent" style="display:none">
+    <div class="stats" id="statsBar"></div>
+    <div class="prog-wrap">
+      <div class="prog-head">
+        <span class="prog-lbl">Overall Completion</span>
+        <span class="prog-pct" id="progPct">0%</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
     </div>
-    <p style="margin-top:10px;color:#1e3a5f;font-size:11px">Your API key is stored only in your browser's localStorage and never sent anywhere except JSONBin.</p>
-  </div>
-
-  <div class="stats" id="statsBar"></div>
-
-  <div class="prog-wrap">
-    <div class="prog-head">
-      <span class="prog-lbl">Overall Completion</span>
-      <span class="prog-pct" id="progPct">0%</span>
-    </div>
-    <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
-  </div>
-
-  <div class="filters">
-    <input class="search-in" id="srch" placeholder="Search tasks, owners, remarks…" oninput="render()"/>
-    <select class="sel" id="stF" onchange="render()">
-      <option value="All">All Statuses</option>
-      <option>Complete</option><option>Done</option><option>Ongoing</option><option>Started</option><option>Not Started</option>
-    </select>
-    <select class="sel" id="owF" onchange="render()"><option value="All">All Owners</option></select>
-    <select class="sel" id="ageF" onchange="render()">
-      <option value="All">All Ageing</option>
-      <option value="overdue">Overdue</option>
-      <option value="due7">Due in 7 days</option>
-      <option value="nodue">No due date</option>
-    </select>
-    <button class="btn-clr" id="clrBtn" onclick="clearF()" style="display:none">Clear ✕</button>
-  </div>
-
-  <div class="add-panel" id="addPanel">
-    <div class="add-ttl">New Task</div>
-    <div class="add-grid">
-      <input class="add-in" id="nTask" placeholder="Task name *"/>
-      <input class="add-in" id="nOwner" placeholder="Owner *"/>
-      <select class="add-in" id="nStatus">
-        <option>Not Started</option><option>Started</option><option>Ongoing</option><option>Done</option><option>Complete</option>
+    <div class="filters">
+      <input class="search-in" id="srch" placeholder="Search tasks, owners, remarks…" oninput="render()"/>
+      <select class="sel" id="stF" onchange="render()">
+        <option value="All">All Statuses</option>
+        <option>Complete</option><option>Done</option><option>Ongoing</option><option>Started</option><option>Not Started</option>
       </select>
-      <input class="add-in" id="nDue" type="date" title="Due Date"/>
-      <input class="add-in" id="nRemarks" placeholder="Remarks" style="grid-column:1/-1"/>
+      <select class="sel" id="owF" onchange="render()"><option value="All">All Owners</option></select>
+      <select class="sel" id="ageF" onchange="render()">
+        <option value="All">All Ageing</option>
+        <option value="overdue">Overdue</option>
+        <option value="due7">Due in 7 days</option>
+        <option value="nodue">No due date</option>
+      </select>
+      <button class="btn-clr" id="clrBtn" onclick="clearF()" style="display:none">Clear ✕</button>
     </div>
-    <div class="add-acts">
-      <button class="btn-submit" onclick="addTask()">Add Task</button>
-      <button class="btn-cxl" onclick="toggleAdd()">Cancel</button>
+    <div class="add-panel" id="addPanel">
+      <div class="add-ttl">New Task</div>
+      <div class="add-grid">
+        <input class="add-in" id="nTask" placeholder="Task name *"/>
+        <input class="add-in" id="nOwner" placeholder="Owner *"/>
+        <select class="add-in" id="nStatus">
+          <option>Not Started</option><option>Started</option><option>Ongoing</option><option>Done</option><option>Complete</option>
+        </select>
+        <input class="add-in" id="nDue" type="date" title="Due Date"/>
+        <input class="add-in" id="nRemarks" placeholder="Remarks" style="grid-column:1/-1"/>
+      </div>
+      <div class="add-acts">
+        <button class="btn-submit" onclick="addTask()">Add Task</button>
+        <button class="btn-cxl" onclick="toggleAdd()">Cancel</button>
+      </div>
     </div>
-  </div>
-
-  <div class="tbl-wrap">
-    <div class="tbl-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th><button class="th-btn" onclick="toggleSort('sno')"># <span id="s-sno">↑</span></button></th>
-            <th><button class="th-btn" onclick="toggleSort('task')">Task <span id="s-task">↕</span></button></th>
-            <th><button class="th-btn" onclick="toggleSort('owner')">Owner <span id="s-owner">↕</span></button></th>
-            <th><button class="th-btn" onclick="toggleSort('status')">Status <span id="s-status">↕</span></button></th>
-            <th><button class="th-btn" onclick="toggleSort('dueDate')">Due Date <span id="s-dueDate">↕</span></button></th>
-            <th><button class="th-btn" onclick="toggleSort('_age')">Ageing <span id="s-_age">↕</span></button></th>
-            <th><button class="th-btn" onclick="toggleSort('remarks')">Remarks <span id="s-remarks">↕</span></button></th>
-            <th><span style="font-size:10px;color:#0f172a;font-weight:700;text-transform:uppercase">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-    <div class="tbl-foot">
-      <span class="foot-count" id="footCount"></span>
-      <div class="age-legend">
-        <span style="color:#4ade80"><span style="width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block"></span> On track</span>
-        <span style="color:#fbbf24"><span style="width:7px;height:7px;border-radius:50%;background:#fbbf24;display:inline-block"></span> Due soon (≤7d)</span>
-        <span style="color:#f87171"><span style="width:7px;height:7px;border-radius:50%;background:#f87171;display:inline-block"></span> Overdue</span>
-        <span style="color:#ef4444"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block"></span> Critical (&gt;30d)</span>
+    <div class="tbl-wrap">
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th><button class="th-btn" onclick="toggleSort('sno')"># <span id="s-sno">↑</span></button></th>
+              <th><button class="th-btn" onclick="toggleSort('task')">Task <span id="s-task">↕</span></button></th>
+              <th><button class="th-btn" onclick="toggleSort('owner')">Owner <span id="s-owner">↕</span></button></th>
+              <th><button class="th-btn" onclick="toggleSort('status')">Status <span id="s-status">↕</span></button></th>
+              <th><button class="th-btn" onclick="toggleSort('dueDate')">Due Date <span id="s-dueDate">↕</span></button></th>
+              <th><button class="th-btn" onclick="toggleSort('_age')">Ageing <span id="s-_age">↕</span></button></th>
+              <th><button class="th-btn" onclick="toggleSort('remarks')">Remarks <span id="s-remarks">↕</span></button></th>
+              <th><span style="font-size:10px;color:#0f172a;font-weight:700;text-transform:uppercase">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="tbl-foot">
+        <span class="foot-count" id="footCount"></span>
+        <div class="age-legend">
+          <span style="color:#4ade80"><span style="width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block"></span> On track</span>
+          <span style="color:#fbbf24"><span style="width:7px;height:7px;border-radius:50%;background:#fbbf24;display:inline-block"></span> Due soon (≤7d)</span>
+          <span style="color:#f87171"><span style="width:7px;height:7px;border-radius:50%;background:#f87171;display:inline-block"></span> Overdue</span>
+          <span style="color:#ef4444"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block"></span> Critical (&gt;30d)</span>
+        </div>
       </div>
     </div>
   </div>
@@ -217,6 +188,10 @@ td{padding:10px 14px;font-size:13px;vertical-align:middle}
 <div class="toast" id="toast"></div>
 
 <script>
+var API_KEY = '$2a$10$rrZm5O.Yv9rb.cZqgRuSb.SVTW0agtulLaFT7F59SME62hTT4CYuK';
+var BIN_ID  = '6a16858b8ef04f45382005e4';
+var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
+
 var TODAY=new Date();TODAY.setHours(0,0,0,0);
 var DONE_ST=['Complete','Done'];
 var BDOT={Complete:'#4ade80',Done:'#4ade80',Ongoing:'#fbbf24',Started:'#60a5fa','Not Started':'#f87171'};
@@ -247,101 +222,80 @@ var DEFAULT_TASKS=[
   {id:22,sno:23,task:"Manpower Status Analysis",owner:"Vrinda/Atharva",status:"Started",dueDate:"",remarks:"Reworking on Analysis, Requirements & Tracker"}
 ];
 
-var tasks=JSON.parse(localStorage.getItem('hrTasks_v3')||'null')||DEFAULT_TASKS;
+var tasks=[];
 var editId=null,sortBy='sno',sortDir='asc';
 
-/* ── JSONBin cloud sync ── */
-var BIN_API='https://api.jsonbin.io/v3/b';
-var apiKey=localStorage.getItem('jb_apiKey')||'';
-var binId=localStorage.getItem('jb_binId')||'';
-
-function initSyncUI(){
-  if(apiKey&&binId){
-    document.getElementById('syncBtn').style.display='flex';
-    document.getElementById('setupBtn').textContent='⚙ Sync On';
-    setSyncStatus('Connected','ok');
-    loadFromCloud();
-    setInterval(loadFromCloud,30000);
-  }
+/* ── Sync status UI ── */
+function setSyncUI(state,msg){
+  var dot=document.getElementById('syncDot');
+  var txt=document.getElementById('syncTxt');
+  var colors={ok:'#4ade80',saving:'#60a5fa',error:'#f87171',idle:'#334155'};
+  dot.style.background=colors[state]||colors.idle;
+  txt.textContent=msg;
 }
 
-function setSyncStatus(msg,type){
-  var el=document.getElementById('syncStatus');
-  el.style.display='inline-block';
-  el.textContent=msg;
-  el.className='sync-status sync-'+type;
-}
-
-function toggleSetup(){
-  var b=document.getElementById('setupBanner');
-  b.style.display=b.style.display==='none'?'block':'none';
-  if(apiKey)document.getElementById('apiKeyIn').value=apiKey;
-  if(binId)document.getElementById('binIdIn').value=binId;
-}
-
-async function connectCloud(){
-  var key=document.getElementById('apiKeyIn').value.trim();
-  var bid=document.getElementById('binIdIn').value.trim();
-  if(!key){alert('Please paste your JSONBin Secret Key');return;}
-  setSyncStatus('Connecting…','ing');
-  try{
-    if(!bid){
-      // create new bin
-      var res=await fetch(BIN_API,{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'HR-Tracker'},body:JSON.stringify({tasks:tasks})});
-      if(!res.ok)throw new Error('Bad API key or network error');
-      var data=await res.json();
-      bid=data.metadata.id;
-    }
-    localStorage.setItem('jb_apiKey',key);
-    localStorage.setItem('jb_binId',bid);
-    apiKey=key;binId=bid;
-    document.getElementById('setupBanner').style.display='none';
-    document.getElementById('syncBtn').style.display='flex';
-    document.getElementById('setupBtn').textContent='⚙ Sync On';
-    setSyncStatus('Connected ✓','ok');
-    setInterval(loadFromCloud,30000);
-    showToast('Cloud sync connected! Bin ID: '+bid);
-  }catch(err){
-    setSyncStatus('Failed','err');
-    showToast('Connection failed: '+err.message,true);
-  }
-}
-
+/* ── Load from JSONBin ── */
 async function loadFromCloud(){
-  if(!apiKey||!binId)return;
-  setSyncStatus('Syncing…','ing');
   try{
-    var res=await fetch(BIN_API+'/'+binId+'/latest',{headers:{'X-Master-Key':apiKey}});
-    if(!res.ok)throw new Error();
+    setSyncUI('saving','Loading…');
+    var res=await fetch(BIN_URL+'/latest',{headers:{'X-Master-Key':API_KEY,'X-Bin-Meta':false}});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    var data=await res.json();
+    var remote=data.record&&data.record.tasks?data.record.tasks:null;
+    if(remote&&remote.length>0){
+      tasks=remote;
+    } else {
+      // first time — push defaults
+      tasks=DEFAULT_TASKS;
+      await saveToCloud(true);
+    }
+    setSyncUI('ok','Live ✓');
+    document.getElementById('loadingScreen').style.display='none';
+    document.getElementById('mainContent').style.display='block';
+    buildOwnerDd();render();
+  }catch(err){
+    setSyncUI('error','Error: '+err.message);
+    // fallback to defaults so page still works
+    tasks=DEFAULT_TASKS;
+    document.getElementById('loadingScreen').style.display='none';
+    document.getElementById('mainContent').style.display='block';
+    buildOwnerDd();render();
+    showToast('Cloud error — showing local data',true);
+  }
+}
+
+/* ── Save to JSONBin ── */
+async function saveToCloud(silent){
+  try{
+    if(!silent)setSyncUI('saving','Saving…');
+    var res=await fetch(BIN_URL,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},
+      body:JSON.stringify({tasks:tasks})
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    if(!silent){setSyncUI('ok','Saved ✓');setTimeout(function(){setSyncUI('ok','Live ✓');},2000);}
+  }catch(err){
+    setSyncUI('error','Save failed');
+    if(!silent)showToast('Save failed — check connection',true);
+  }
+}
+
+/* ── Poll every 20s ── */
+setInterval(async function(){
+  try{
+    var res=await fetch(BIN_URL+'/latest',{headers:{'X-Master-Key':API_KEY,'X-Bin-Meta':false}});
+    if(!res.ok)return;
     var data=await res.json();
     if(data.record&&data.record.tasks){
       tasks=data.record.tasks;
-      localStorage.setItem('hrTasks_v3',JSON.stringify(tasks));
       buildOwnerDd();render();
+      setSyncUI('ok','Live ✓');
     }
-    setSyncStatus('Synced ✓','ok');
-  }catch(e){setSyncStatus('Sync error','err');}
-}
+  }catch(e){}
+},20000);
 
-async function saveToCloud(){
-  if(!apiKey||!binId)return;
-  setSyncStatus('Saving…','ing');
-  try{
-    var res=await fetch(BIN_API+'/'+binId,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':apiKey},body:JSON.stringify({tasks:tasks})});
-    if(!res.ok)throw new Error();
-    setSyncStatus('Saved ✓','ok');
-  }catch(e){setSyncStatus('Save error','err');}
-}
-
-function syncNow(){loadFromCloud();}
-
-/* ── local save ── */
-function save(){
-  localStorage.setItem('hrTasks_v3',JSON.stringify(tasks));
-  saveToCloud();
-}
-
-/* ── ageing ── */
+/* ── Ageing ── */
 function ageDays(t){
   if(!t.dueDate||DONE_ST.indexOf(t.status)>-1)return null;
   var d=new Date(t.dueDate);d.setHours(0,0,0,0);
@@ -357,7 +311,7 @@ function ageChip(t){
   return r<=7?'<span class="age-chip age-warn">'+r+'d left</span>':'<span class="age-chip age-ok">'+r+'d left</span>';
 }
 
-/* ── helpers ── */
+/* ── Helpers ── */
 function owners(){
   var s=new Set();
   tasks.forEach(function(t){t.owner.split('/').forEach(function(o){s.add(o.trim());});});
@@ -470,18 +424,25 @@ function cancelEdit(){editId=null;render();}
 
 function saveEdit(id){
   tasks=tasks.map(function(t){
-    return t.id===id?Object.assign({},t,{task:document.getElementById('et').value,owner:document.getElementById('eo').value,status:document.getElementById('es').value,dueDate:document.getElementById('edu').value,remarks:document.getElementById('er').value}):t;
+    return t.id===id?Object.assign({},t,{
+      task:document.getElementById('et').value,
+      owner:document.getElementById('eo').value,
+      status:document.getElementById('es').value,
+      dueDate:document.getElementById('edu').value,
+      remarks:document.getElementById('er').value
+    }):t;
   });
-  editId=null;save();buildOwnerDd();render();
+  editId=null;
+  buildOwnerDd();render();
+  saveToCloud();
   var row=document.getElementById('r'+id);
   if(row){row.classList.add('flash');setTimeout(function(){row.classList.remove('flash');},1000);}
-  showToast('Saved ✓');
 }
 
 function delTask(id){
   if(!confirm('Delete this task?'))return;
   tasks=tasks.filter(function(t){return t.id!==id;});
-  save();buildOwnerDd();render();
+  buildOwnerDd();render();saveToCloud();
 }
 
 function toggleAdd(){
@@ -494,15 +455,15 @@ function addTask(){
   var t=document.getElementById('nTask').value.trim();
   var o=document.getElementById('nOwner').value.trim();
   if(!t||!o){alert('Task name and owner are required.');return;}
-  var newSno=tasks.length>0?Math.max.apply(null,tasks.map(function(x){return x.sno||0;}))+1:1;
-  tasks.push({id:Date.now(),sno:newSno,task:t,owner:o,status:document.getElementById('nStatus').value,dueDate:document.getElementById('nDue').value,remarks:document.getElementById('nRemarks').value});
+  var maxSno=tasks.length>0?Math.max.apply(null,tasks.map(function(x){return x.sno||0;})):0;
+  tasks.push({id:Date.now(),sno:maxSno+1,task:t,owner:o,status:document.getElementById('nStatus').value,dueDate:document.getElementById('nDue').value,remarks:document.getElementById('nRemarks').value});
   document.getElementById('nTask').value='';
   document.getElementById('nOwner').value='';
   document.getElementById('nStatus').value='Not Started';
   document.getElementById('nDue').value='';
   document.getElementById('nRemarks').value='';
   document.getElementById('addPanel').classList.remove('open');
-  save();buildOwnerDd();render();showToast('Task added ✓');
+  buildOwnerDd();render();saveToCloud();showToast('Task added ✓');
 }
 
 function clearF(){
@@ -519,7 +480,8 @@ function showToast(msg,err){
   setTimeout(function(){t.className='toast';},2500);
 }
 
-buildOwnerDd();updateStats();render();initSyncUI();
+// Start
+loadFromCloud();
 </script>
 </body>
 </html>
