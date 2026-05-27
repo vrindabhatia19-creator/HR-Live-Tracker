@@ -15,8 +15,7 @@ body{background:#05080f;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFo
 .subtitle{font-size:10px;color:#334155;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
 h1{font-size:26px;font-weight:700;letter-spacing:-.02em;color:#f8fafc}
 .hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
-.sync-label{font-size:11px;font-weight:600}
+.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;transition:background .3s}
 .btn-add{background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:6px}
 .btn-add:hover{opacity:.85}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:18px}
@@ -102,15 +101,15 @@ td{padding:10px 14px;font-size:13px;vertical-align:middle}
       <h1>HR Projects &amp; Analytics</h1>
     </div>
     <div class="hdr-right">
-      <span id="syncIndicator" style="display:flex;align-items:center;font-size:11px;font-weight:600;color:#334155">
-        <span class="sync-dot" id="syncDot" style="background:#334155"></span>
-        <span id="syncTxt">Connecting…</span>
+      <span style="display:flex;align-items:center;font-size:11px;font-weight:600">
+        <span class="sync-dot" id="syncDot" style="background:#fbbf24"></span>
+        <span id="syncTxt" style="color:#475569">Connecting…</span>
       </span>
       <button class="btn-add" onclick="toggleAdd()"><span style="font-size:17px;line-height:1">+</span> Add Task</button>
     </div>
   </div>
 
-  <div id="loadingScreen" style="text-align:center;padding:60px 0">
+  <div id="loadingScreen" style="text-align:center;padding:80px 0">
     <div class="spinner"></div>
     <p style="margin-top:16px;color:#334155;font-size:12px;letter-spacing:.1em;text-transform:uppercase">Loading shared tracker…</p>
   </div>
@@ -147,7 +146,7 @@ td{padding:10px 14px;font-size:13px;vertical-align:middle}
         <select class="add-in" id="nStatus">
           <option>Not Started</option><option>Started</option><option>Ongoing</option><option>Done</option><option>Complete</option>
         </select>
-        <input class="add-in" id="nDue" type="date" title="Due Date"/>
+        <input class="add-in" id="nDue" type="date"/>
         <input class="add-in" id="nRemarks" placeholder="Remarks" style="grid-column:1/-1"/>
       </div>
       <div class="add-acts">
@@ -176,10 +175,10 @@ td{padding:10px 14px;font-size:13px;vertical-align:middle}
       <div class="tbl-foot">
         <span class="foot-count" id="footCount"></span>
         <div class="age-legend">
-          <span style="color:#4ade80"><span style="width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block"></span> On track</span>
-          <span style="color:#fbbf24"><span style="width:7px;height:7px;border-radius:50%;background:#fbbf24;display:inline-block"></span> Due soon (≤7d)</span>
-          <span style="color:#f87171"><span style="width:7px;height:7px;border-radius:50%;background:#f87171;display:inline-block"></span> Overdue</span>
-          <span style="color:#ef4444"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block"></span> Critical (&gt;30d)</span>
+          <span style="color:#4ade80"><span style="width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block"></span>On track</span>
+          <span style="color:#fbbf24"><span style="width:7px;height:7px;border-radius:50%;background:#fbbf24;display:inline-block"></span>Due soon</span>
+          <span style="color:#f87171"><span style="width:7px;height:7px;border-radius:50%;background:#f87171;display:inline-block"></span>Overdue</span>
+          <span style="color:#ef4444"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block"></span>Critical &gt;30d</span>
         </div>
       </div>
     </div>
@@ -188,9 +187,9 @@ td{padding:10px 14px;font-size:13px;vertical-align:middle}
 <div class="toast" id="toast"></div>
 
 <script>
-var API_KEY = '$2a$10$rrZm5O.Yv9rb.cZqgRuSb.SVTW0agtulLaFT7F59SME62hTT4CYuK';
-var BIN_ID  = '6a16858b8ef04f45382005e4';
-var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
+// ── Firebase config ──
+var DB_URL = 'https://hr-tracker-70b02-default-rtdb.firebaseio.com';
+var TASKS_URL = DB_URL + '/tasks.json';
 
 var TODAY=new Date();TODAY.setHours(0,0,0,0);
 var DONE_ST=['Complete','Done'];
@@ -225,77 +224,72 @@ var DEFAULT_TASKS=[
 var tasks=[];
 var editId=null,sortBy='sno',sortDir='asc';
 
-/* ── Sync status UI ── */
 function setSyncUI(state,msg){
-  var dot=document.getElementById('syncDot');
-  var txt=document.getElementById('syncTxt');
-  var colors={ok:'#4ade80',saving:'#60a5fa',error:'#f87171',idle:'#334155'};
-  dot.style.background=colors[state]||colors.idle;
-  txt.textContent=msg;
+  var colors={live:'#4ade80',saving:'#60a5fa',error:'#f87171',connecting:'#fbbf24'};
+  document.getElementById('syncDot').style.background=colors[state]||'#475569';
+  document.getElementById('syncTxt').style.color=colors[state]||'#475569';
+  document.getElementById('syncTxt').textContent=msg;
 }
 
-/* ── Load from JSONBin ── */
-async function loadFromCloud(){
+// ── Firebase REST API ──
+async function fbGet(){
+  var res=await fetch(TASKS_URL);
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  return await res.json();
+}
+async function fbSet(data){
+  var res=await fetch(TASKS_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  return await res.json();
+}
+
+async function loadFromFirebase(){
   try{
-    setSyncUI('saving','Loading…');
-    var res=await fetch(BIN_URL+'/latest',{headers:{'X-Master-Key':API_KEY,'X-Bin-Meta':false}});
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    var data=await res.json();
-    var remote=data.record&&data.record.tasks?data.record.tasks:null;
-    if(remote&&remote.length>0){
-      tasks=remote;
+    setSyncUI('connecting','Connecting…');
+    var data=await fbGet();
+    if(data&&Array.isArray(data)&&data.length>0){
+      tasks=data;
     } else {
-      // first time — push defaults
+      // First load — seed with default tasks
       tasks=DEFAULT_TASKS;
-      await saveToCloud(true);
+      await fbSet(tasks);
     }
-    setSyncUI('ok','Live ✓');
+    setSyncUI('live','Live ✓');
     document.getElementById('loadingScreen').style.display='none';
     document.getElementById('mainContent').style.display='block';
     buildOwnerDd();render();
+    // Start real-time polling every 10s
+    setInterval(pollFirebase,10000);
   }catch(err){
-    setSyncUI('error','Error: '+err.message);
-    // fallback to defaults so page still works
-    tasks=DEFAULT_TASKS;
-    document.getElementById('loadingScreen').style.display='none';
-    document.getElementById('mainContent').style.display='block';
-    buildOwnerDd();render();
-    showToast('Cloud error — showing local data',true);
+    setSyncUI('error','Error — retrying…');
+    setTimeout(loadFromFirebase,3000);
   }
 }
 
-/* ── Save to JSONBin ── */
-async function saveToCloud(silent){
+async function pollFirebase(){
   try{
-    if(!silent)setSyncUI('saving','Saving…');
-    var res=await fetch(BIN_URL,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},
-      body:JSON.stringify({tasks:tasks})
-    });
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    if(!silent){setSyncUI('ok','Saved ✓');setTimeout(function(){setSyncUI('ok','Live ✓');},2000);}
-  }catch(err){
-    setSyncUI('error','Save failed');
-    if(!silent)showToast('Save failed — check connection',true);
-  }
-}
-
-/* ── Poll every 20s ── */
-setInterval(async function(){
-  try{
-    var res=await fetch(BIN_URL+'/latest',{headers:{'X-Master-Key':API_KEY,'X-Bin-Meta':false}});
-    if(!res.ok)return;
-    var data=await res.json();
-    if(data.record&&data.record.tasks){
-      tasks=data.record.tasks;
+    var data=await fbGet();
+    if(data&&Array.isArray(data)){
+      tasks=data;
       buildOwnerDd();render();
-      setSyncUI('ok','Live ✓');
+      setSyncUI('live','Live ✓');
     }
-  }catch(e){}
-},20000);
+  }catch(e){setSyncUI('error','Sync error');}
+}
 
-/* ── Ageing ── */
+async function saveToFirebase(){
+  try{
+    setSyncUI('saving','Saving…');
+    await fbSet(tasks);
+    setSyncUI('live','Saved ✓');
+    setTimeout(function(){setSyncUI('live','Live ✓');},1500);
+  }catch(e){
+    setSyncUI('error','Save failed');
+    showToast('Save failed — check connection',true);
+  }
+}
+
+// ── Ageing ──
 function ageDays(t){
   if(!t.dueDate||DONE_ST.indexOf(t.status)>-1)return null;
   var d=new Date(t.dueDate);d.setHours(0,0,0,0);
@@ -311,7 +305,7 @@ function ageChip(t){
   return r<=7?'<span class="age-chip age-warn">'+r+'d left</span>':'<span class="age-chip age-ok">'+r+'d left</span>';
 }
 
-/* ── Helpers ── */
+// ── Helpers ──
 function owners(){
   var s=new Set();
   tasks.forEach(function(t){t.owner.split('/').forEach(function(o){s.add(o.trim());});});
@@ -432,9 +426,7 @@ function saveEdit(id){
       remarks:document.getElementById('er').value
     }):t;
   });
-  editId=null;
-  buildOwnerDd();render();
-  saveToCloud();
+  editId=null;buildOwnerDd();render();saveToFirebase();
   var row=document.getElementById('r'+id);
   if(row){row.classList.add('flash');setTimeout(function(){row.classList.remove('flash');},1000);}
 }
@@ -442,7 +434,7 @@ function saveEdit(id){
 function delTask(id){
   if(!confirm('Delete this task?'))return;
   tasks=tasks.filter(function(t){return t.id!==id;});
-  buildOwnerDd();render();saveToCloud();
+  buildOwnerDd();render();saveToFirebase();
 }
 
 function toggleAdd(){
@@ -463,7 +455,7 @@ function addTask(){
   document.getElementById('nDue').value='';
   document.getElementById('nRemarks').value='';
   document.getElementById('addPanel').classList.remove('open');
-  buildOwnerDd();render();saveToCloud();showToast('Task added ✓');
+  buildOwnerDd();render();saveToFirebase();showToast('Task added ✓');
 }
 
 function clearF(){
@@ -480,8 +472,7 @@ function showToast(msg,err){
   setTimeout(function(){t.className='toast';},2500);
 }
 
-// Start
-loadFromCloud();
+loadFromFirebase();
 </script>
 </body>
 </html>
